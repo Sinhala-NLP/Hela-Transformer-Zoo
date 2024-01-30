@@ -1,0 +1,1 @@
+from hela_transformers.text_classification.classification_model import ClassificationModel
