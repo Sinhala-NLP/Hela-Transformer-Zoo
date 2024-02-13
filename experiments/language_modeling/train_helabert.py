@@ -1,29 +1,27 @@
-import shutil
+from datasets import load_dataset
 import torch
 import argparse
-import csv
 
 from hela_transformers.text_classification.transformer_models.args.model_args import LanguageModelingArgs
 from hela_transformers.language_modeling.language_modeling_model import LanguageModelingModel
-
 
 parser = argparse.ArgumentParser(
     description='''evaluates multiple models  ''')
 parser.add_argument('--model_name', required=False, help='model name', default="bert-large-cased")
 parser.add_argument('--model_type', required=False, help='model type', default="bert")
 parser.add_argument('--cuda_device', required=False, help='cuda device', default=0)
+parser.add_argument('--cache_path', required=False, help='cache directory path', default=None)
 arguments = parser.parse_args()
 
-with open('data/nsina_5.csv', 'rb') as csvfile, open('output_file.txt', 'w', encoding='utf-8') as txtfile:
-    # Decode the content of the CSV file using utf-8
-    csv_content = csvfile.read().decode('utf-8')  # 'utf-8-sig' removes the BOM
+CACHE_DIR = arguments.cache_path
 
-    # Use csv.reader to handle CSV content
-    csv_reader = csv.reader(csv_content.splitlines())
+dataset = load_dataset("sinhala-nlp/HelaTransformer", cache_dir=CACHE_DIR, column_names=['text'])
 
-    for row in csv_reader:
+with open('output_file.txt', 'w', encoding='utf-8') as txtfile:
+
+    for row in dataset['train'].data.columns[0]:
         # Convert each row to a string and write to the text file
-        txtfile.write(','.join(row) + '\n')
+        txtfile.write(','.join(str(row)) + '\n')
 
 with open('output_file.txt', encoding='utf-8') as f:
     lines = f.read().splitlines()
@@ -45,7 +43,7 @@ with open('test.txt', 'w', encoding='utf-8') as f:
 model_args = LanguageModelingArgs()
 model_args.reprocess_input_data = True
 model_args.overwrite_output_dir = True
-model_args.num_train_epochs = 1
+model_args.num_train_epochs = 25
 model_args.dataset_type = "simple"
 model_args.train_batch_size = 16
 model_args.eval_batch_size = 32
@@ -58,6 +56,7 @@ model_args.save_recent_only = True
 model_args.wandb_project = "LM"
 model_args.use_multiprocessing = False
 model_args.use_multiprocessing_for_evaluation = False
+model_args.vocab_size = 30000
 
 
 MODEL_TYPE = arguments.model_type
@@ -67,9 +66,9 @@ cuda_device = int(arguments.cuda_device)
 train_file = "train.txt"
 test_file = "test.txt"
 
-model = LanguageModelingModel(MODEL_TYPE, MODEL_NAME, args=model_args,
-                            use_cuda=torch.cuda.is_available(),
-                            cuda_device=cuda_device)
+model = LanguageModelingModel(
+    MODEL_TYPE, None, args=model_args, train_files=train_file, use_cuda=torch.cuda.is_available()
+)
 
 # Train the model
 model.train_model(train_file, eval_file=test_file)

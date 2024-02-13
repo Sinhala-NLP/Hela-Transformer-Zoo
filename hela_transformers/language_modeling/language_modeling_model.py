@@ -124,7 +124,7 @@ from transformers.data.datasets.language_modeling import (
 try:
     import wandb
 
-    wandb.login(key="a869bf0268ec37e2677bc59db0854ab4b6b02e87")
+    # wandb.login(key="a869bf0268ec37e2677bc59db0854ab4b6b02e87")
     wandb_available = True
 except ImportError:
     wandb_available = False
